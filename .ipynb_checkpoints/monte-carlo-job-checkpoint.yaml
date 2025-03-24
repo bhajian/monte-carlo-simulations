@@ -1,0 +1,44 @@
+apiVersion: kubeflow.org/v1
+kind: MPIJob
+metadata:
+  name: monte-carlo-nasdaq
+spec:
+  slotsPerWorker: 1
+  runPolicy:
+    cleanPodPolicy: None
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: launcher
+              image: bhajian/monte-carlo:latest
+              command: ["mpirun", "--allow-run-as-root", "-np", "10", "python", "monte_carlo_sim.py"]
+              volumeMounts:
+                - name: efs-data
+                  mountPath: /home/test-rwx
+              env:
+                - name: HOME
+                  value: /home
+          volumes:
+            - name: efs-data
+              persistentVolumeClaim:
+                claimName: test-rwx
+    Worker:
+      replicas: 10
+      template:
+        spec:
+          containers:
+            - name: worker
+              image: bhajian/monte-carlo:latest
+              volumeMounts:
+                - name: efs-data
+                  mountPath: /home/test-rwx
+              env:
+                - name: HOME
+                  value: /home
+          volumes:
+            - name: efs-data
+              persistentVolumeClaim:
+                claimName: test-rwx
